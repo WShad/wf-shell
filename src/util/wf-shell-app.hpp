@@ -9,6 +9,7 @@
 #include <gdkmm/monitor.h>
 
 #include "wayfire-shell-unstable-v2-client-protocol.h"
+#include "wf-ipc.hpp"
 
 using GMonitor = Glib::RefPtr<Gdk::Monitor>;
 /**
@@ -66,6 +67,7 @@ class WayfireShellApp
     int inotify_css_fd;
     wf::config::config_manager_t config;
     zwf_shell_manager_v2 *wf_shell_manager = nullptr;
+    std::shared_ptr<WayfireIPC> ipc = nullptr;
 
     WayfireShellApp(int argc, char **argv);
     virtual ~WayfireShellApp();

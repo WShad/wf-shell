@@ -6,8 +6,8 @@
 #include <gdk/gdkwayland.h>
 #include <gtk-layer-shell.h>
 
-#include <stdio.h>
 #include <iostream>
+#include <memory>
 #include <sstream>
 
 #include <map>
@@ -16,8 +16,10 @@
 #include "panel.hpp"
 #include "../util/gtk-utils.hpp"
 
+#include "wf-ipc.hpp"
 #include "widgets/battery.hpp"
 #include "widgets/command-output.hpp"
+#include "widgets/language.hpp"
 #include "widgets/menu.hpp"
 #include "widgets/clock.hpp"
 #include "widgets/launchers.hpp"
@@ -36,6 +38,7 @@
 class WayfirePanel::impl
 {
     std::unique_ptr<WayfireAutohidingWindow> window;
+    std::shared_ptr<WayfireIPC> ipc;
 
     Gtk::HBox content_box;
     Gtk::HBox left_box, center_box, right_box;
@@ -226,6 +229,11 @@ class WayfirePanel::impl
             return Widget(new WfCommandOutputButtons());
         }
 
+        if (name == "language")
+        {
+            return Widget(new WayfireLanguage(ipc));
+        }
+
         if (auto pixel = widget_with_value(name, "spacing"))
         {
             return Widget(new WayfireSpacing(*pixel));
@@ -313,7 +321,7 @@ class WayfirePanel::impl
     }
 
   public:
-    impl(WayfireOutput *output) : output(output)
+    impl(WayfireOutput *output, std::shared_ptr<WayfireIPC> ipc) : ipc(ipc), output(output)
     {
         create_window();
     }
@@ -347,8 +355,9 @@ class WayfirePanel::impl
     }
 };
 
-WayfirePanel::WayfirePanel(WayfireOutput *output) : pimpl(new impl(output))
+WayfirePanel::WayfirePanel(WayfireOutput *output, std::shared_ptr<WayfireIPC> ipc) : pimpl(new impl(output, ipc))
 {}
+
 wl_surface*WayfirePanel::get_wl_surface()
 {
     return pimpl->get_wl_surface();
@@ -437,7 +446,7 @@ void WayfirePanelApp::add_css_file(std::string file, int priority)
 void WayfirePanelApp::handle_new_output(WayfireOutput *output)
 {
     priv->panels[output] = std::unique_ptr<WayfirePanel>(
-        new WayfirePanel(output));
+        new WayfirePanel(output, ipc));
 }
 
 WayfirePanel*WayfirePanelApp::panel_for_wl_output(wl_output *output)
